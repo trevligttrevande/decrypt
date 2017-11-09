@@ -1,27 +1,6 @@
-// Group 1's Codeword Generator Subroutine (pseudocode)
-//  (remember:  "seed" is a global variable, UNSIGNED INTEGER;
-//              you may implement local variables in registers or on the stack;
-//              result returned in v0; preserve all except t regs)
-//
-// FUNCTION codgen(): UNSIGNED INTEGER;
-//  LOCAL SIGNED INTEGER   n;
-//  LOCAL UNSIGNED INTEGER x, y;
-//  BEGIN
-//    n := [count the number of 0's in word "seed"];
-//    x := [rotate "seed" left by 30 bits];
-//    y := [shift "seed" right-ARITHMETIC by 6 bits];
-//    seed := x XOR y XOR n;
-//   RETURN( seed XOR 0x464b713e );
-//  END;
-// 
-// hint:  if "seed" is initialized to 0x3e944b9f,
-//        the first five calls will generate these values:
-//        0x891432f9, 0x4aa1dccc, 0xc54270fa, 0x9885155f, 0xce83d1b8, ...
-// your code is to be written farther down (see comment below).
-fn main() {
-    let mut bytearr: [u8;132] = [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0];
-    let abc: [u32;4] = [0x9fdd9158,0x85715808,0xac73323a,0];
-    let coded: [u32;132] = [0x015e7a47
+    static mut plain: [u8;132] = [0;132];
+    static abc: [u32;4] = [0x9fdd9158,0x85715808,0xac73323a,0];
+    static coded: [u32;132] = [0x015e7a47
 	,	0x2ef84ebb
 	,	0x177a8db4
 	,	0x1b722ff9
@@ -153,9 +132,12 @@ fn main() {
 	,	0x09a1c6c8
 	,	0xc2e41061
 	,	    0];
-    let mut seed: u32 = 0x0e0657c1;
-    decode(&coded[0..],&mut bytearr[0..], &mut seed); // first argument should be abc or coded
-    for character in bytearr.iter() {
+    static mut seed: u32 = 0x0e0657c1;
+
+fn main() {
+
+    decode(&coded[0..],&mut plain[0..]); // first argument should be abc or coded
+    for character in plain.iter() {
         print!("{}",*character as char);
     }
 
@@ -176,14 +158,35 @@ fn main() {
     */
 }
 
-fn codgen(seed: &mut u32) -> Result<u32,String>
+// Group 1's Codeword Generator Subroutine (pseudocode)
+//  (remember:  "seed" is a global variable, UNSIGNED INTEGER;
+//              you may implement local variables in registers or on the stack;
+//              result returned in v0; preserve all except t regs)
+//
+// FUNCTION codgen(): UNSIGNED INTEGER;
+//  LOCAL SIGNED INTEGER   n;
+//  LOCAL UNSIGNED INTEGER x, y;
+//  BEGIN
+//    n := [count the number of 0's in word "seed"];
+//    x := [rotate "seed" left by 30 bits];
+//    y := [shift "seed" right-ARITHMETIC by 6 bits];
+//    seed := x XOR y XOR n;
+//   RETURN( seed XOR 0x464b713e );
+//  END;
+// 
+// hint:  if "seed" is initialized to 0x3e944b9f,
+//        the first five calls will generate these values:
+//        0x891432f9, 0x4aa1dccc, 0xc54270fa, 0x9885155f, 0xce83d1b8, ...
+// your code is to be written farther down (see comment below)
+
+fn codgen() -> Result<u32,String>
 {
     let n: i32 = seed.count_zeros() as i32;
     let x: u32 = seed.rotate_left(30);
-    let y: i32 = (*seed as i32)>>6;
-    *seed = (x^(y as u32))^(n as u32);  
+    let y: i32 = (seed as i32)>>6;
+    seed = (x^(y as u32))^(n as u32);  
 
-    Ok(*seed^0x464b713e)
+    Ok(seed^0x464b713e)
 }
 
 
@@ -203,9 +206,9 @@ fn codgen(seed: &mut u32) -> Result<u32,String>
 //      r := x + y + m + r + 5;
 //    ENDIF;
 //    RETURN( r );
-fn decode(wordarr: & [u32], bytearr: &mut [u8],mut seed: &mut u32 ) -> Result<u32,String>
+fn decode(wordarr: & [u32], bytearr: &mut [u8]) -> Result<u32,String>
 {
-    let x: u32 = match codgen(&mut seed) {
+    let x: u32 = match codgen() {
         Ok(x)=> !x,							
         Err(_)=> panic!("AHHAHA"),
     };
@@ -217,13 +220,13 @@ fn decode(wordarr: & [u32], bytearr: &mut [u8],mut seed: &mut u32 ) -> Result<u3
         Ok(x)
     }
     else {
-        y = match decode(&wordarr[1..],&mut bytearr[1..], &mut seed) {
+        y = match decode(&wordarr[1..],&mut bytearr[1..]) {
             Ok(y) => y,
             Err(_) => panic!("AAAAAHHHH"),					// These panics are extremely unhelpful, I know. But they also shouldn't occur.
         };
         m = x.wrapping_sub(y).wrapping_sub(wordarr[0]); 
         bytearr[0] = (m>>13&0xff) as u8;            // Extract the desired byte
-        r = match codgen(&mut seed) {
+        r = match codgen() {
             Ok(r) =>  (!r).wrapping_add(1),
             Err(_) => panic!("AHHHHH"),
         };
