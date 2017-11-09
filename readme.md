@@ -1,0 +1,1 @@
+This program decodes the array in coded and prints its content.

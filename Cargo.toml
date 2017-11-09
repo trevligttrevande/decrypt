@@ -1,0 +1,6 @@
+[package]
+name = "decrypt"
+version = "0.1.0"
+authors = ["trevligttrevande <33224385+trevligttrevande@users.noreply.github.com>"]
+
+[dependencies]
