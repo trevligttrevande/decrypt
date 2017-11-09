@@ -135,11 +135,12 @@
     static mut seed: u32 = 0x0e0657c1;
 
 fn main() {
-
-    decode(&coded[0..],&mut plain[0..]); // first argument should be abc or coded
-    for character in plain.iter() {
-        print!("{}",*character as char);
-    }
+	unsafe {
+		decode(&coded[0..],&mut plain[0..]); // first argument should be abc or coded
+		for character in plain.iter() {
+			print!("{}",*character as char);
+		}
+	}
 
 
 //codgen test
@@ -179,7 +180,7 @@ fn main() {
 //        0x891432f9, 0x4aa1dccc, 0xc54270fa, 0x9885155f, 0xce83d1b8, ...
 // your code is to be written farther down (see comment below)
 
-fn codgen() -> Result<u32,String>
+unsafe fn codgen() -> Result<u32,String>
 {
     let n: i32 = seed.count_zeros() as i32;
     let x: u32 = seed.rotate_left(30);
@@ -208,10 +209,12 @@ fn codgen() -> Result<u32,String>
 //    RETURN( r );
 fn decode(wordarr: & [u32], bytearr: &mut [u8]) -> Result<u32,String>
 {
-    let x: u32 = match codgen() {
-        Ok(x)=> !x,							
-        Err(_)=> panic!("AHHAHA"),
-    };
+    let x: u32 = unsafe {
+		match codgen() {
+			Ok(x)=> !x,							
+			Err(_)=> panic!("AHHAHA"),
+		}
+	};
     let r: u32;
     let m: u32;
     let y: u32;
@@ -224,12 +227,14 @@ fn decode(wordarr: & [u32], bytearr: &mut [u8]) -> Result<u32,String>
             Ok(y) => y,
             Err(_) => panic!("AAAAAHHHH"),					// These panics are extremely unhelpful, I know. But they also shouldn't occur.
         };
-        m = x.wrapping_sub(y).wrapping_sub(wordarr[0]); 
-        bytearr[0] = (m>>13&0xff) as u8;            // Extract the desired byte
-        r = match codgen() {
-            Ok(r) =>  (!r).wrapping_add(1),
-            Err(_) => panic!("AHHHHH"),
-        };
+        m = x.wrapping_sub(y).wrapping_sub(wordarr[0]);
+		unsafe {
+			bytearr[0] = (m>>13&0xff) as u8;            // Extract the desired byte
+			r = match codgen() {
+				Ok(r) =>  (!r).wrapping_add(1),
+				Err(_) => panic!("AHHHHH"),
+			};
+	}
         Ok(x.wrapping_add(y).wrapping_add(m).wrapping_add(r).wrapping_add(5))
     }
     
